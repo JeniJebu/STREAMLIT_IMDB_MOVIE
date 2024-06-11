@@ -1,78 +1,60 @@
 import streamlit as st
-import joblib
+import pickle
 import numpy as np
 
 # Load the trained model
-model = joblib.load('random_forest_model.pkl')
-
+with open('best_random_forest_model.pkl', 'rb') as file:
+    loaded_model = pickle.load(file)
 
 st.title("Movie Success Prediction")
 st.write("Enter the details of the movie:")
 
-# Group 1: Review and Popularity
-st.header("Review and Popularity")
 col1, col2 = st.columns(2)
+
+# Input fields for user to enter the movie details
 with col1:
-    num_critic_for_reviews = st.number_input('Number of Critic Reviews', min_value=0.0, max_value=1000.0, value=50.0, step=1.0)
-    num_user_for_reviews = st.number_input('Number of User Reviews', min_value=0.0, max_value=10000.0, value=500.0, step=10.0)
+    num_critic_for_reviews = st.number_input("Number of Critic Reviews", min_value=2.0, max_value=813.0, value=138.0)
+    duration = st.number_input("Duration (minutes)", min_value=37.0, max_value=330.0, value=106.0)
+    director_facebook_likes = st.number_input("Director Facebook Likes", min_value=0.0, max_value=23000.0, value=63.0)
+    actor_3_facebook_likes = st.number_input("Actor 3 Facebook Likes", min_value=0.0, max_value=23000.0, value=436.0)
+    actor_1_facebook_likes = st.number_input("Actor 1 Facebook Likes", min_value=0.0, max_value=640000.0, value=1000.0)
+    gross = st.number_input("Gross Revenue", min_value=162.0, max_value=760505800.0, value=30054710.5)
+    num_voted_users = st.number_input("Number of Voted Users", min_value=91.0, max_value=1689764.0, value=53993.5)
+
 with col2:
-    num_voted_users = st.number_input('Number of Voted Users', min_value=0.0, max_value=1e7, value=50000.0, step=1000.0)
+    facenumber_in_poster = st.number_input("Face Number in Poster", min_value=0.0, max_value=43.0, value=1.0)
+    num_user_for_reviews = st.number_input("Number of User Reviews", min_value=4.0, max_value=5060.0, value=209.5)
+    budget = st.number_input("Budget", min_value=218.0, max_value=12215500000.0, value=25000000.0)
+    title_year = st.number_input("Title Year", min_value=1927.0, max_value=2016.0, value=2004.0)
+    actor_2_facebook_likes = st.number_input("Actor 2 Facebook Likes", min_value=0.0, max_value=137000.0, value=683.0)
+    movie_facebook_likes = st.number_input("Movie Facebook Likes", min_value=0.0, max_value=349000.0, value=225.5)
+    
+    
+# Creating empty columns around the button for centering
+col3, col4, col5 = st.columns([2, 1, 2])
 
-# Group 2: Social Media Likes
-st.header("Social Media Likes")
-col1, col2 = st.columns(2)
-with col1:
-    director_facebook_likes = st.number_input('Director Facebook Likes', min_value=0.0, max_value=1e6, value=5000.0, step=100.0)
-    actor_1_facebook_likes = st.number_input('Actor 1 Facebook Likes', min_value=0.0, max_value=1e6, value=5000.0, step=100.0)
-    actor_3_facebook_likes = st.number_input('Actor 3 Facebook Likes', min_value=0.0, max_value=1e6, value=5000.0, step=100.0)
-with col2:
-    actor_2_facebook_likes = st.number_input('Actor 2 Facebook Likes', min_value=0.0, max_value=1e6, value=5000.0, step=100.0)
-    movie_facebook_likes = st.number_input('Movie Facebook Likes', min_value=0.0, max_value=1e6, value=5000.0, step=100.0)
+with col4:
+    submitted = st.button('Predict')
 
-# Group 3: Movie Details
-st.header("Movie Details")
-col1, col2 = st.columns(2)
-with col1:
-    duration = st.number_input('Duration (in minutes)', min_value=0.0, max_value=500.0, value=120.0, step=1.0)
-    facenumber_in_poster = st.number_input('Number of Faces in Poster', min_value=0.0, max_value=10.0, value=1.0, step=1.0)
-with col2:
-    title_year = st.number_input('Title Year', min_value=1900.0, max_value=2100.0, value=2020.0, step=1.0)
+if submitted:
+    user_features = np.array([
+        num_critic_for_reviews, duration, director_facebook_likes,
+        actor_3_facebook_likes, actor_1_facebook_likes, gross,
+        num_voted_users, facenumber_in_poster, num_user_for_reviews, 
+        budget, title_year, actor_2_facebook_likes, movie_facebook_likes,
+    ]).reshape(1, -1)
+    
+    predicted_category = loaded_model.predict(user_features)[0]
+    labels = ['Poor', 'Average', 'Good']
+    
+    # Convert predicted_category to integer or use directly if already numeric
+    if isinstance(predicted_category, str):
+        predicted_category = labels.index(predicted_category)
+    predicted_label = labels[predicted_category]
 
-# Group 4: Financials
-st.header("Financials")
-col1, col2 = st.columns(2)
-with col1:
-    gross = st.number_input('Gross Earnings', min_value=0.0, max_value=1e10, value=1e6, step=1e4)
-with col2:
-    budget = st.number_input('Budget', min_value=0.0, max_value=1e10, value=1e6, step=1e4)
+    st.write(f"Predicted Category: {predicted_label}")
 
-# Center the Predict button using CSS
-st.markdown("""
-    <style>
-    .stButton>button {
-        display: block;
-        margin: 0 auto;
-    }
-    </style>
-""", unsafe_allow_html=True)
-
-if st.button('Predict'):
-    # Prepare input data for prediction
-    input_array = np.array([[num_critic_for_reviews, num_user_for_reviews, num_voted_users,
-                             director_facebook_likes, actor_1_facebook_likes,actor_3_facebook_likes,
-                             actor_2_facebook_likes, movie_facebook_likes, duration,  facenumber_in_poster,
-                             title_year, gross,  budget,  ]])
-  
-
-                            
-    # Make prediction
-    prediction = model.predict(input_array)
-
-    # Debug information
-    st.write(f"Prediction output: {prediction}")
-
-    # Map prediction to success or not
-    if 'Poor' in prediction:  # If 'Poor' is predicted
-        st.write("The movie is predicted not to be a success!")
-    else:  # If only 'Average' or 'Good' is predicted
+    if predicted_label == 'Poor':
+        st.error("The movie is predicted not to be a success!")
+    else:
         st.success("The movie is predicted to be a success!")
